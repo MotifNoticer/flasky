@@ -11,7 +11,7 @@ def validate_crystal(crystal_id):
     try:
         crystal_id = int(crystal_id)
     except:
-        abort(make_response({"message": f"{crystal_id} is not a valid type ({type(crystal_id)}. Must be an integer)"}, 400))
+        abort(make_response({"message": f"{crystal_id} is not a valid type {type(crystal_id)}. Must be an integer)"}, 400))
     for crystal in crystals:
         if crystal_id == crystal.id:
             return crystal
