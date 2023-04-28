@@ -1,68 +1,97 @@
-from flask import Blueprint, jsonify, abort, make_response
-class Crystals:
-    def __init__(self, id, name, color, powers):
-        self.id = id
-        self.name = name
-        self.color = color
-        self.powers = powers
-        
-# create helper function whose single responsibility is to validate id passed in and reurn the instance of the crsytal that is found
-def validate_crystal(crystal_id):
-    try:
-        crystal_id = int(crystal_id)
-    except:
-        abort(make_response({"message": f"{crystal_id} is not a valid type {type(crystal_id)}. Must be an integer)"}, 400))
-    for crystal in crystals:
-        if crystal_id == crystal.id:
-            return crystal
-        
-    abort(make_response({"message": f"crystal {crystal_id} does not exist"}, 404))
+from flask import Blueprint, jsonify, abort, make_response, request
+from app.models.crystals import Crystal
+from app import db
+# class Crystals:
+#     def __init__(self, id, name, color, powers):
+#         self.id = id
+#         self.name = name
+#         self.color = color
+#         self.powers = powers
 
 # create a list of crystals
-crystals = [
-    Crystals(1, "Ameythyst", "Purple", "Infinite knowledge and wisdom"),
-    Crystals(2, "Tiger's Eye", "Golden brown", "Strength, power, confidence, intelligence, daring"),
-    Crystals(3, "Rose Quartz", "Pink", "Love, compassion, partnership")
-]
+# crystals = [
+#     Crystals(1, "Ameythyst", "Purple", "Infinite knowledge and wisdom"),
+#     Crystals(2, "Tiger's Eye", "Golden brown", "Strength, power, confidence, intelligence, daring"),
+#     Crystals(3, "Rose Quartz", "Pink", "Love, compassion, partnership")
+# ]
+        
+# create helper function whose single responsibility is to validate id passed in and reurn the instance of the crsytal that is found
+# def validate_crystal(crystal_id):
+#     try:
+#         crystal_id = int(crystal_id)
+#     except:
+#         abort(make_response({"message": f"{crystal_id} is not a valid type {type(crystal_id)}. Must be an integer)"}, 400))
+#     for crystal in crystals:
+#         if crystal_id == crystal.id:
+#             return crystal
+        
+#     abort(make_response({"message": f"crystal {crystal_id} does not exist"}, 404))
 
 # make blueprint to group all crystal routes together
 crystal_bp = Blueprint("crystals", __name__, url_prefix="/crystals")
 
+@crystal_bp.route("", methods=["POST"])
+def create_crystal():
+    request_body = request.get_json()
+    
+    new_crystal = Crystal(
+        name = request_body["name"],
+        color = request_body["color"],
+        powers = request_body["powers"]
+    )
+    
+    db.session.add(new_crystal)
+    db.session.commit()
+    
+    return {"message": f"Crystal {request_body['name']} was created."}, 201
 # decorator to accept the following messages
 # determine representation and send back some response
-@crystal_bp.route("", methods=["GET"])
+# @crystal_bp.route("", methods=["GET"])
 
 # create crystal list, add dictionary data represntaiton of the crystal to the list
-def handle_crystals():
-    crystal_response = []
-    for crystal in crystals:
-        crystal_response.append({
-            "id": crystal.id,
-            "name": crystal.name,
-            "color": crystal.color,
-            "powers": crystal.powers
-            })
+# def handle_crystals():
+#     crystal_response = []
+#     for crystal in crystals:
+#         crystal_response.append({
+#             "id": crystal.id,
+#             "name": crystal.name,
+#             "color": crystal.color,
+#             "powers": crystal.powers
+#             })
         
-    return jsonify(crystal_response)
+#     return jsonify(crystal_response)
         
         
 # reuse decorator to make another instance of the blueprint class, pass in the crystal_id endpoint
 # use angle brackets to let flask know that what ever is inside <> will be used in view function after
 # localhost:5000/crystals/1 to search for crystal with crystal_id 1
-@crystal_bp.route("/<crystal_id>", methods=["GET"])
-def handle_crystal(crystal_id):
-    crystal = validate_crystal(crystal_id)
+# @crystal_bp.route("/<crystal_id>", methods=["GET"])
+# def handle_crystal(crystal_id):
+#     crystal = validate_crystal(crystal_id)
     
-    # don't need to jsonify because it's already written as a json object (double quotes, key value pairs)
-    return {
-        "id": crystal.id,
-        "name": crystal.name,
-        "color": crystal.color,
-        "powers": crystal.powers
-    }
+#     # don't need to jsonify because it's already written as a json object (double quotes, key value pairs)
+#     return {
+#         "id": crystal.id,
+#         "name": crystal.name,
+#         "color": crystal.color,
+#         "powers": crystal.powers
+#        }
 
 
     # impictely returns None if condition not met
     # this is NOT acceptable in flask
     # must add error handling
-    
+@crystal_bp.route("", methods=["GET"])
+def read_all_crystals():
+        crystals_response = []
+        crystals = Crystal.query.all()
+        
+        for crystal in crystals:
+            crystals_response.append({
+                "id": crystal.id,
+                "name": crystal.name,
+                "color": crystal.color,
+                "powers": crystal.powers
+            })
+            
+        return jsonify(crystals_response)
