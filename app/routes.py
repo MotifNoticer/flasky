@@ -1,31 +1,6 @@
 from flask import Blueprint, jsonify, abort, make_response, request
 from app.models.crystals import Crystal
 from app import db
-# class Crystals:
-#     def __init__(self, id, name, color, powers):
-#         self.id = id
-#         self.name = name
-#         self.color = color
-#         self.powers = powers
-
-# create a list of crystals
-# crystals = [
-#     Crystals(1, "Ameythyst", "Purple", "Infinite knowledge and wisdom"),
-#     Crystals(2, "Tiger's Eye", "Golden brown", "Strength, power, confidence, intelligence, daring"),
-#     Crystals(3, "Rose Quartz", "Pink", "Love, compassion, partnership")
-# ]
-        
-# create helper function whose single responsibility is to validate id passed in and reurn the instance of the crsytal that is found
-# def validate_crystal(crystal_id):
-#     try:
-#         crystal_id = int(crystal_id)
-#     except:
-#         abort(make_response({"message": f"{crystal_id} is not a valid type {type(crystal_id)}. Must be an integer)"}, 400))
-#     for crystal in crystals:
-#         if crystal_id == crystal.id:
-#             return crystal
-        
-#     abort(make_response({"message": f"crystal {crystal_id} does not exist"}, 404))
 
 # make blueprint to group all crystal routes together
 crystal_bp = Blueprint("crystals", __name__, url_prefix="/crystals")
@@ -59,9 +34,8 @@ def create_crystal():
 #             "powers": crystal.powers
 #             })
         
-#     return jsonify(crystal_response)
-        
-        
+#     return jsonify(crystal_response)  
+
 # reuse decorator to make another instance of the blueprint class, pass in the crystal_id endpoint
 # use angle brackets to let flask know that what ever is inside <> will be used in view function after
 # localhost:5000/crystals/1 to search for crystal with crystal_id 1
@@ -81,8 +55,17 @@ def create_crystal():
     # impictely returns None if condition not met
     # this is NOT acceptable in flask
     # must add error handling
+    
 @crystal_bp.route("", methods=["GET"])
 def read_all_crystals():
+
+        color_query = request.args.get("color")
+        if color_query:
+            crystals = Crystal.query.filter_by(color=color_query)
+        else:
+            Crystal.query.all()
+                    
+        
         crystals_response = []
         crystals = Crystal.query.all()
         
@@ -95,3 +78,68 @@ def read_all_crystals():
             })
             
         return jsonify(crystals_response)
+    
+    # Define a route for getting a single crystal
+    # GET /crystals/<crystal_id>
+    
+    # Create decorator with crystal id endpoint
+@crystal_bp.route("/<crystal_id>", methods=["GET"])
+def read_one_crystal(crystal_id):
+        # Query our db
+    # crystal = Crystal.query.get(crystal_id)
+    crystal = handle_crystal(crystal_id)
+        
+        # show a single crystal: return the crystal dictionary
+    return {
+                "id": crystal.id,
+                "name": crystal.name,
+                "color": crystal.color,
+                "powers": crystal.powers
+            }, 200
+    
+    
+@crystal_bp.route("/<crystal_id>", methods=["PUT"])
+def update_crystal(crystal_id):
+    
+    # crystal = (crystal_id)
+    crystal = handle_crystal(crystal_id)
+    request_body = request.get_json()
+    
+    crystal.name = request_body["name"]
+    crystal.color = request_body["color"]
+    crystal.powers = request_body["powers"]
+    
+    db.session.commit()
+        
+    return {
+            "id": crystal.id,
+            "name": crystal.name,
+            "color": crystal.color,
+            "powers": crystal.powers
+        }, 200
+    
+@crystal_bp.route("/<crystal_id>", methods=["DELETE"])
+def delete_crystal(crystal_id):
+    # crystal = Crystal.query.get(crystal_id)
+    # call validate crystal instead
+    
+    crystal = handle_crystal(crystal_id)
+    
+    db.session.delete(crystal)
+    db.session.commit()
+    
+    return make_response(f"Crystal #{crystal.id} sucessfully deleted.")
+
+def handle_crystal(crystal_id):
+    request_body = request.get_json()
+    try:
+        crystal_id = int(crystal_id)
+    except:
+        abort(make_response({"message":f"crystal {crystal_id} invalid"}, 400))
+        
+    crystal = Crystal.query.get(crystal_id)
+    
+    if not crystal:
+        abort(make_respone({"message": f"crystal {crystal_id} does not exist"}, 404))
+        
+    return crystal
