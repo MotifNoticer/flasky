@@ -27,7 +27,6 @@ from app.models.healer import Healer
 #         if crystal.id == crystal_id:
 #             return crystal
     
-
 #     abort(make_response({"message": f"crystal {crystal_id} does not exist"}, 404))
 
 
